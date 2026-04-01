@@ -27,7 +27,7 @@ jobs:
         run: npm ci
       
       - name: Security audit
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=moderate
       
       - name: Run tests
         run: npm test || echo "No tests configured"
@@ -73,7 +73,7 @@ jobs:
         run: npm ci
       
       - name: Security audit
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=moderate
       
       - name: Build package
         run: npm run build
