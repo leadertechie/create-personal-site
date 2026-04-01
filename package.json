@@ -1,9 +1,9 @@
 {
   "name": "@leadertechie/create-personal-site",
   "version": "0.0.0",
-  "description": "Create a personal website powered by @leadertechie/personal-site-kit",
+  "description": "Scaffold a personal website powered by Cloudflare Workers and R2. Fetches GitHub profile to auto-populate content.",
   "bin": {
-    "create-personal-site": "./bin/index.js"
+    "create-personal-site": "./dist/index.js"
   },
   "type": "module",
   "engines": {
@@ -11,9 +11,14 @@
   },
   "license": "MIT",
   "files": [
-    "bin",
-    "templates"
+    "dist",
+    "templates",
+    "README.md"
   ],
+  "scripts": {
+    "build": "tsc && node --input-type=module -e \"import{writeFileSync,chmodSync,readFileSync}from'fs';const p='dist/index.js';let c=readFileSync(p,'utf8');if(!c.startsWith('#!')){writeFileSync(p,'#!/usr/bin/env node\\n'+c);chmodSync(p,493)}\"",
+    "prepublishOnly": "npm run build"
+  },
   "keywords": [
     "cli",
     "personal-site",
@@ -24,9 +29,14 @@
     "url": "https://github.com/leadertechie/create-personal-site"
   },
   "dependencies": {
-    "prompts": "^2.4.2",
-    "kolorist": "^1.8.0",
+    "execa": "^8.0.1",
     "fs-extra": "^11.1.1",
-    "execa": "^8.0.1"
+    "kolorist": "^1.8.0",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/prompts": "^2.4.9",
+    "typescript": "^5.4.0"
   }
 }

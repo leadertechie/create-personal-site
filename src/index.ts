@@ -1,25 +1,42 @@
 #!/usr/bin/env node
 import prompts from 'prompts';
-import { red, green, blue, bold } from 'kolorist';
+import { red, green, blue } from 'kolorist';
 import fs from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-async function fetchGithubProfile(username) {
+interface GithubProfile {
+  name?: string;
+  bio?: string;
+  html_url?: string;
+  email?: string;
+}
+
+interface Answers {
+  projectName: string;
+  githubUsername: string;
+  siteTitle: string;
+}
+
+async function fetchGithubProfile(username: string): Promise<GithubProfile | null> {
   if (!username) return null;
   try {
     const res = await fetch("https://api.github.com/users/" + username);
-    if (res.ok) return await res.json();
-  } catch (e) {}
+    if (res.ok) return await res.json() as GithubProfile;
+  } catch (_e) {}
   return null;
 }
 
-async function init() {
+async function init(): Promise<void> {
+  const args = process.argv.slice(2);
+  const projectNameArg = args[0];
+
   const response = await prompts([
     {
-      type: 'text',
+      type: projectNameArg ? null : 'text',
       name: 'projectName',
       message: 'Project name:',
       initial: 'my-personal-site'
@@ -27,17 +44,19 @@ async function init() {
     {
       type: 'text',
       name: 'githubUsername',
-      message: 'GitHub username:'
+      message: 'GitHub username: (optional, press enter to skip)',
+      initial: ''
     },
     {
-        type: 'text',
-        name: 'siteTitle',
-        message: 'Site title:',
-        initial: 'My Personal Website'
+      type: 'text',
+      name: 'siteTitle',
+      message: 'Site title:',
+      initial: 'My Personal Website'
     }
-  ]);
-
-  const { projectName, githubUsername, siteTitle } = response;
+  ]) as Answers;
+  
+  const projectName = projectNameArg || response.projectName;
+  const { githubUsername, siteTitle } = response;
   if (!projectName) {
     console.log(red('Cancelled.'));
     return;
@@ -45,29 +64,21 @@ async function init() {
 
   const root = path.join(process.cwd(), projectName);
   
-  console.log("
-Creating project in " + blue(root) + "...");
+  console.log("\nCreating project in " + blue(root) + "...");
 
-  // 1. Create directory
   await fs.ensureDir(root);
 
-  // 2. Fetch Github profile to personalize
   let profile = await fetchGithubProfile(githubUsername);
   if (profile) {
     console.log(green("Fetched GitHub profile for " + profile.name));
   }
 
-  // 3. Create personalized content
   const contentDir = path.join(root, 'content');
   const pagesDir = path.join(contentDir, 'pages');
   await fs.ensureDir(contentDir);
   await fs.ensureDir(pagesDir);
   
-  const aboutMe = "# About Me
-
-" + (profile?.bio || "Welcome to my site!") + "
-
-Find more on my [GitHub](" + (profile?.html_url || "") + ").";
+  const aboutMe = "# About Me\n\n" + (profile?.bio || "Welcome to my site!") + "\n\nFind more on my [GitHub](" + (profile?.html_url || "") + ").";
   await fs.writeFile(path.join(contentDir, 'about-me.md'), aboutMe);
   
   const homePageTitle = profile?.name || "My Personal Website";
@@ -92,42 +103,25 @@ Welcome to my site!`;
   };
   await fs.writeFile(path.join(contentDir, 'static-details.json'), JSON.stringify(staticDetails, null, 2));
 
-  // 4. Copy templates
   await fs.copy(path.join(__dirname, '..', 'templates'), root);
 
-  // 5. Create project-specific files
   await fs.ensureDir(path.join(root, 'api'));
   await fs.ensureDir(path.join(root, 'ui'));
   await fs.ensureDir(path.join(root, 'prerender'));
 
-  await fs.writeFile(path.join(root, 'api/index.ts'), "import { WebsiteAPI } from '@leadertechie/personal-site-kit/api';
+  await fs.writeFile(path.join(root, 'api/index.ts'), "import { WebsiteAPI } from '@leadertechie/personal-site-kit/api';\n\nexport default new WebsiteAPI();\n");
+  await fs.writeFile(path.join(root, 'ui/index.ts'), "import { WebsiteUI } from '@leadertechie/personal-site-kit/shared';\nimport '@leadertechie/personal-site-kit/ui/banner';\nimport '@leadertechie/personal-site-kit/ui/footer';\nimport '@leadertechie/personal-site-kit/ui/about-me';\n\nWebsiteUI.bootstrap();\n");
+  await fs.writeFile(path.join(root, 'prerender/index.ts'), "import { WebsitePrerender } from '@leadertechie/personal-site-kit/prerender';\n\nexport default new WebsitePrerender();\n");
 
-export default new WebsiteAPI();
-");
-  await fs.writeFile(path.join(root, 'ui/index.ts'), "import { WebsiteUI } from '@leadertechie/personal-site-kit/shared';
-import '@leadertechie/personal-site-kit/ui/banner';
-import '@leadertechie/personal-site-kit/ui/footer';
-import '@leadertechie/personal-site-kit/ui/about-me';
-
-WebsiteUI.bootstrap();
-");
-  await fs.writeFile(path.join(root, 'prerender/index.ts'), "import { WebsitePrerender } from '@leadertechie/personal-site-kit/prerender';
-
-export default new WebsitePrerender();
-");
-
-  // Replace template variables in wrangler.toml
   const wranglerToml = await fs.readFile(path.join(root, 'wrangler.toml'), 'utf-8');
   const processedToml = wranglerToml
     .replace(/\{\{name\}\}/g, projectName)
     .replace(/\{\{siteTitle\}\}/g, siteTitle || 'My Personal Website');
   await fs.writeFile(path.join(root, 'wrangler.toml'), processedToml);
 
-  // Replace template variables in README
   const readme = await fs.readFile(path.join(root, 'README.md'), 'utf-8');
   await fs.writeFile(path.join(root, 'README.md'), readme.replace(/\{\{name\}\}/g, projectName));
 
-  // 6. Create package.json
   const pkg = {
     name: projectName,
     version: '0.1.0',
@@ -144,9 +138,7 @@ export default new WebsitePrerender();
   };
   await fs.writeFile(path.join(root, 'package.json'), JSON.stringify(pkg, null, 2));
 
-  console.log("
-" + green('Done!') + " Now run:
-");
+  console.log("\n" + green('Done!') + " Now run:\n");
   console.log("  cd " + projectName);
   console.log("  npm install");
   console.log("  # Update wrangler.toml with your R2 bucket name");
