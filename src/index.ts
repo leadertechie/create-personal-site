@@ -133,6 +133,7 @@ Welcome to my site!`;
     },
     dependencies: {
       "@leadertechie/personal-site-kit": "latest",
+      "wrangler": "^3.0.0",
       "lit": "^3.2.1"
     }
   };
