@@ -1,0 +1,32 @@
+{
+  "name": "@leadertechie/create-personal-site",
+  "version": "0.0.0",
+  "description": "Create a personal website powered by @leadertechie/personal-site-kit",
+  "bin": {
+    "create-personal-site": "./bin/index.js"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "files": [
+    "bin",
+    "templates"
+  ],
+  "keywords": [
+    "cli",
+    "personal-site",
+    "cloudflare-workers"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/leadertechie/create-personal-site"
+  },
+  "dependencies": {
+    "prompts": "^2.4.2",
+    "kolorist": "^1.8.0",
+    "fs-extra": "^11.1.1",
+    "execa": "^8.0.1"
+  }
+}
