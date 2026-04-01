@@ -77,9 +77,6 @@ jobs:
       - name: Make bin executable
         run: chmod +x bin/index.js
       
-      - name: Upgrade npm
-        run: npm ci -g npm@latest
-      
       - name: Security audit
         run: npm audit --audit-level=high
       
