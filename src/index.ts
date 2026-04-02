@@ -109,8 +109,11 @@ Welcome to my site!`;
   await fs.ensureDir(path.join(root, 'ui'));
   await fs.ensureDir(path.join(root, 'prerender'));
 
-  await fs.writeFile(path.join(root, 'api/index.ts'), "import { WebsiteAPI } from '@leadertechie/personal-site-kit/api';\n\nexport default new WebsiteAPI();\n");
-  await fs.writeFile(path.join(root, 'ui/index.ts'), "import { WebsiteUI } from '@leadertechie/personal-site-kit/shared';\nimport '@leadertechie/personal-site-kit/ui/banner';\nimport '@leadertechie/personal-site-kit/ui/footer';\nimport '@leadertechie/personal-site-kit/ui/about-me';\n\nWebsiteUI.bootstrap();\n");
+  await fs.writeFile(path.join(root, 'api/index.ts'), "import { WebsiteAPI } from '@leadertechie/personal-site-kit/api';\n\nconst api = new WebsiteAPI();\nexport default api;\n");
+  
+  // UI Entry with Hook pattern - NO local styles.css
+  await fs.writeFile(path.join(root, 'ui/index.ts'), "import '@leadertechie/personal-site-kit/styles/theme.css';\nimport { WebsiteUI } from '@leadertechie/personal-site-kit/shared';\nimport '@leadertechie/personal-site-kit/ui';\n\nWebsiteUI.getInstance({\n  // Using hooks for style overriding or custom logic\n  theme: {\n    // primaryColor: '#646cff',\n    // customCss: ':root { --nav-link-color: blue; }'\n  },\n  onBootstrap: (ui) => {\n    console.log('Site is booting up with kit!');\n  }\n}).bootstrap();\n");
+  
   await fs.writeFile(path.join(root, 'prerender/index.ts'), "import { WebsitePrerender } from '@leadertechie/personal-site-kit/prerender';\n\nexport default new WebsitePrerender();\n");
 
   const wranglerToml = await fs.readFile(path.join(root, 'wrangler.toml'), 'utf-8');
@@ -119,6 +122,12 @@ Welcome to my site!`;
     .replace(/\{\{siteTitle\}\}/g, siteTitle || 'My Personal Website');
   await fs.writeFile(path.join(root, 'wrangler.toml'), processedToml);
 
+  const indexHtmlPath = path.join(root, 'ui/index.html');
+  if (await fs.pathExists(indexHtmlPath)) {
+    const indexHtml = await fs.readFile(indexHtmlPath, 'utf-8');
+    await fs.writeFile(indexHtmlPath, indexHtml.replace(/\{\{siteTitle\}\}/g, siteTitle || 'My Personal Website'));
+  }
+
   const readme = await fs.readFile(path.join(root, 'README.md'), 'utf-8');
   await fs.writeFile(path.join(root, 'README.md'), readme.replace(/\{\{name\}\}/g, projectName));
 
@@ -126,15 +135,26 @@ Welcome to my site!`;
     name: projectName,
     version: '0.1.0',
     private: true,
+    type: 'module',
     scripts: {
-      "dev": "wrangler dev",
-      "deploy": "wrangler deploy",
+      "dev": "concurrently \"npm run dev:api\" \"npm run dev:ui\"",
+      "dev:api": "wrangler dev",
+      "dev:ui": "vite",
+      "build": "npm run build:ui && npm run build:api",
+      "build:ui": "vite build",
+      "build:api": "wrangler deploy --dry-run --outdir dist/api",
+      "deploy": "npm run build && wrangler deploy",
       "seed": "# Script to upload content to R2"
     },
     dependencies: {
       "@leadertechie/personal-site-kit": "latest",
-      "wrangler": "^4.60.0",
       "lit": "^3.2.1"
+    },
+    devDependencies: {
+      "wrangler": "^4.79.0",
+      "vite": "^7.3.1",
+      "typescript": "^5.7.3",
+      "concurrently": "^9.1.2"
     }
   };
   await fs.writeFile(path.join(root, 'package.json'), JSON.stringify(pkg, null, 2));
