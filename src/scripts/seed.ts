@@ -6,23 +6,34 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 const CONTENT_DIR = path.join(ROOT, 'content');
 
-// Configuration - can be overridden by env vars
+// Configuration from CLI args
+const args = process.argv.slice(2);
 const API_URL = process.env.API_URL || 'http://localhost:8787';
-const ADMIN_USER = process.env.ADMIN_USER || 'admin';
-const ADMIN_PASS = process.env.ADMIN_PASS || 'adminpassword123';
+const ADMIN_USER = args[0];
+const ADMIN_PASS = args[1];
 
 async function seed() {
-  console.log(`🚀 Starting seed process for ${API_URL}...`);
+  console.log(`\n🚀 Starting seed process for ${API_URL}...`);
 
   try {
+    if (!ADMIN_USER || !ADMIN_PASS) {
+        throw new Error('Missing credentials. Usage: npm run seed -- <username> <password>');
+    }
+
+    console.log(`👤 Using admin user: "${ADMIN_USER}"`);
+
     // 1. Check Auth Status
-    const statusRes = await fetch(`${API_URL}/api/auth/status`);
+    process.stdout.write('🔍 Checking authentication status... ');
+    const statusRes = await fetch(`${API_URL}/api/auth/status`).catch(e => {
+        throw new Error(`Could not connect to API at ${API_URL}. Is your local dev server running?`);
+    });
     const status = await statusRes.json();
+    console.log('Done.');
 
     let sessionToken: string | null = '';
 
     if (!status.configured) {
-      console.log('📝 Admin not configured. Performing first-time setup...');
+      process.stdout.write('📝 Admin not configured. Performing first-time setup... ');
       const setupRes = await fetch(`${API_URL}/api/auth/setup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -35,9 +46,9 @@ async function seed() {
       }
 
       sessionToken = setupRes.headers.get('X-Session-Token');
-      console.log('✅ Admin configured successfully.');
+      console.log('✅ Success.');
     } else {
-      console.log(`🔑 Admin already configured as "${status.username}". Logging in...`);
+      process.stdout.write(`🔑 Admin configured. Logging in... `);
       const loginRes = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -45,59 +56,69 @@ async function seed() {
       });
 
       if (!loginRes.ok) {
-        throw new Error('Login failed. Please check ADMIN_USER and ADMIN_PASS env vars.');
+        throw new Error('Login failed. Please check your credentials.');
       }
 
       sessionToken = loginRes.headers.get('X-Session-Token');
-      console.log('✅ Login successful.');
+      console.log('✅ Success.');
     }
 
     if (!sessionToken) {
       throw new Error('No session token received.');
     }
 
-    // 2. Upload Content
-    console.log('📂 Syncing content directory...');
-    await uploadDirectory(CONTENT_DIR, '', sessionToken);
+    // 2. Count Files for Progress
+    process.stdout.write('📂 Scanning content directory... ');
+    const files = getAllFiles(CONTENT_DIR);
+    console.log(`Found ${files.length} files.`);
 
-    console.log('\n✨ Seeding complete!');
-  } catch (err) {
-    console.error(`\n❌ Seeding failed: ${err instanceof Error ? err.message : String(err)}`);
-    process.exit(1);
-  }
-}
-
-async function uploadDirectory(dir: string, subpath: string, token: string) {
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-    const remotePath = subpath ? `${subpath}/${entry.name}` : entry.name;
-
-    if (entry.isDirectory()) {
-      await uploadDirectory(fullPath, remotePath, token);
-    } else {
-      process.stdout.write(`  ⬆️  Uploading ${remotePath}... `);
-      const content = fs.readFileSync(fullPath);
+    // 3. Upload Content
+    console.log('\n📤 Syncing content:');
+    let completed = 0;
+    for (const file of files) {
+      const relativePath = path.relative(CONTENT_DIR, file);
+      const percentage = Math.round((completed / files.length) * 100);
       
-      const res = await fetch(`${API_URL}/api/content/${remotePath}`, {
+      process.stdout.write(`   [${percentage}%] ${relativePath}... `);
+      
+      const content = fs.readFileSync(file);
+      const res = await fetch(`${API_URL}/api/content/${relativePath}`, {
         method: 'PUT',
         headers: {
-          'X-Session-Token': token,
-          'Content-Type': getContentType(entry.name)
+          'X-Session-Token': sessionToken,
+          'Content-Type': getContentType(file)
         },
         body: content
       });
 
       if (res.ok) {
-        console.log('Done.');
+        completed++;
+        process.stdout.write('OK\n');
       } else {
-        console.log('Failed.');
         const err = await res.json().catch(() => ({ error: res.statusText }));
-        console.error(`     Error: ${err.error}`);
+        process.stdout.write(`FAILED (${err.error})\n`);
       }
     }
+
+    console.log('\n✨ Seeding complete! 100%');
+  } catch (err) {
+    console.error(`\n❌ Error: ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(1);
   }
+}
+
+function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): string[] {
+  const files = fs.readdirSync(dirPath);
+
+  files.forEach(function(file) {
+    if (fs.statSync(dirPath + "/" + file).isDirectory()) {
+      arrayOfFiles = getAllFiles(dirPath + "/" + file, arrayOfFiles);
+    } else {
+      arrayOfFiles.push(path.join(dirPath, "/", file));
+    }
+  });
+
+  return arrayOfFiles;
 }
 
 function getContentType(filename: string): string {
