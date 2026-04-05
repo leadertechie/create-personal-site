@@ -1,0 +1,21 @@
+<svg width="600" height="320" viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .text-main { 
+      fill: light-dark(#4A5568, #E2E8F0);
+      font-family: 'Segoe UI', 'Arial Black', sans-serif; 
+      font-weight: 900; 
+      font-size: 46px; 
+      letter-spacing: -0.01em; 
+      text-anchor: middle; 
+    }
+  </style>
+
+  <!-- Big circle placeholder -->
+  <circle cx="300" cy="160" r="100" fill="none" stroke="light-dark(#A0AEC0, #718096)" stroke-width="2" stroke-dasharray="8 4" opacity="0.5" />
+  
+  <!-- Plus sign in circle -->
+  <line x1="300" y1="100" x2="300" y2="220" stroke="light-dark(#A0AEC0, #718096)" stroke-width="2" opacity="0.3" />
+  <line x1="240" y1="160" x2="360" y2="160" stroke="light-dark(#A0AEC0, #718096)" stroke-width="2" opacity="0.3" />
+
+  <text x="300" y="290" class="text-main">YOUR LOGO</text>
+</svg>

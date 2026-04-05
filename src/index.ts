@@ -108,6 +108,13 @@ Welcome to my site!`;
   await fs.ensureDir(path.join(root, 'api'));
   await fs.ensureDir(path.join(root, 'ui'));
   await fs.ensureDir(path.join(root, 'prerender'));
+  await fs.ensureDir(path.join(root, 'scripts'));
+
+  // Copy seed script from dist to target
+  const seedSrc = path.join(__dirname, 'scripts/seed.js');
+  if (await fs.pathExists(seedSrc)) {
+    await fs.copy(seedSrc, path.join(root, 'scripts/seed.js'));
+  }
 
   await fs.writeFile(path.join(root, 'api/index.ts'), "import { WebsiteAPI } from '@leadertechie/personal-site-kit/api';\n\nconst api = new WebsiteAPI();\nexport default api;\n");
   
@@ -144,7 +151,7 @@ Welcome to my site!`;
       "build:ui": "vite build",
       "build:api": "wrangler deploy --dry-run --outdir dist/api",
       "deploy": "npm run build && wrangler deploy",
-      "seed": "# Script to upload content to R2"
+      "seed": "node scripts/seed.js"
     },
     dependencies: {
       "@leadertechie/personal-site-kit": "latest",
