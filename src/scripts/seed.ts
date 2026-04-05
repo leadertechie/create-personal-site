@@ -19,7 +19,7 @@ async function seed() {
     const statusRes = await fetch(`${API_URL}/api/auth/status`);
     const status = await statusRes.json();
 
-    let sessionToken = '';
+    let sessionToken: string | null = '';
 
     if (!status.configured) {
       console.log('📝 Admin not configured. Performing first-time setup...');
@@ -52,18 +52,22 @@ async function seed() {
       console.log('✅ Login successful.');
     }
 
+    if (!sessionToken) {
+      throw new Error('No session token received.');
+    }
+
     // 2. Upload Content
     console.log('📂 Syncing content directory...');
     await uploadDirectory(CONTENT_DIR, '', sessionToken);
 
     console.log('\n✨ Seeding complete!');
   } catch (err) {
-    console.error(`\n❌ Seeding failed: ${err.message}`);
+    console.error(`\n❌ Seeding failed: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);
   }
 }
 
-async function uploadDirectory(dir, subpath, token) {
+async function uploadDirectory(dir: string, subpath: string, token: string) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
 
   for (const entry of entries) {
@@ -96,7 +100,7 @@ async function uploadDirectory(dir, subpath, token) {
   }
 }
 
-function getContentType(filename) {
+function getContentType(filename: string): string {
   if (filename.endsWith('.md')) return 'text/markdown';
   if (filename.endsWith('.json')) return 'application/json';
   if (filename.endsWith('.svg')) return 'image/svg+xml';
