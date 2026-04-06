@@ -7,4 +7,8 @@ SITE_TITLE = "{{siteTitle}}"
 
 [[r2_buckets]]
 binding = "CONTENT_BUCKET"
-bucket_name = "your-content-bucket"
+bucket_name = "{{name}}"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "your-kv-id"

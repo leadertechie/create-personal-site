@@ -24,32 +24,44 @@ Your website's content (Markdown, JSON, Images) is stored in a Cloudflare R2 buc
 ```bash
 npx wrangler r2 bucket create {{name}}
 ```
-*If you used a different name for your bucket, update the `bucket_name` under `[[r2_buckets]]` in your `wrangler.toml` file.*
+*Your `wrangler.toml` is already configured to use a bucket named `{{name}}`. If you used a different name, update the `bucket_name` field in `wrangler.toml`.*
 
-### 4. Initial Setup & Seeding
+### 4. Create your KV Namespace
+The website uses Cloudflare KV to store authentication data and session tokens. Create it now:
+```bash
+npx wrangler kv namespace create KV
+```
+*Copy the **`id`** from the command output and paste it into your `wrangler.toml` file:*
+```toml
+[[kv_namespaces]]
+binding = "KV"
+id = "PASTE_THE_ID_HERE"
+```
+
+### 5. Initial Setup & Seeding
 This step initializes your admin credentials and uploads your initial content to Cloudflare. 
 
 **This step is mandatory and requires a username and password.**
 
 ```bash
-npm run seed -- <username> <password>
+npm run seed -- <username> '<password>'
 ```
-Example:
+Example (use single quotes for passwords with special characters):
 ```bash
-npm run seed -- admin my-secure-password
+npm run seed -- admin 'my-secure-password!123'
 ```
 - **First Run**: This will call the `/auth/setup` endpoint to create your admin account with the provided credentials.
 - **Subsequent Runs**: This will log in using these credentials to sync any local changes in your `content/` folder to R2.
 
-### 5. Local Development
+### 6. Local Development
 Test your site locally to see how it looks:
 ```bash
 npm run dev
 ```
 - **UI**: http://localhost:5173
-- **API**: http://localhost:8787
+- **API**: http://localhost:8788 (or 8787)
 
-### 6. Deploy to Production
+### 7. Deploy to Production
 Publish your site to the global Cloudflare edge network:
 ```bash
 npm run deploy

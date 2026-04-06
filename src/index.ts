@@ -93,6 +93,14 @@ description: Welcome to my personal website.
 Welcome to my site!`;
   await fs.writeFile(path.join(pagesDir, 'home.md'), homePage);
   
+  const profileData = {
+    name: profile?.name || "Your Name",
+    title: "Software Architect",
+    experience: "10+ years",
+    profileImageUrl: ""
+  };
+  await fs.writeFile(path.join(contentDir, 'profile.json'), JSON.stringify(profileData, null, 2));
+
   const staticDetails = {
     siteTitle: siteTitle || profile?.name || "My Personal Website",
     siteDescription: profile?.bio || "Welcome to my professional portfolio.",
@@ -166,11 +174,19 @@ Welcome to my site!`;
   };
   await fs.writeFile(path.join(root, 'package.json'), JSON.stringify(pkg, null, 2));
 
+  // Create .env file for local development
+  const envContent = `# Local Development Configuration\nVITE_API_URL=http://localhost:8788\n`;
+  await fs.writeFile(path.join(root, '.env'), envContent);
+
   console.log("\n" + green('Done!') + " Now run:\n");
   console.log("  cd " + projectName);
   console.log("  npm install");
-  console.log("  # Update wrangler.toml with your R2 bucket name");
+  console.log("  npx wrangler login");
+  console.log("  npx wrangler r2 bucket create " + projectName);
+  console.log("  npx wrangler kv namespace create KV");
+  console.log("  # Update wrangler.toml with the KV ID from the command above");
   console.log("  npm run dev");
+  console.log("  npm run seed -- <username> '<password>'");
 }
 
 init().catch(e => console.error(red(e)));
