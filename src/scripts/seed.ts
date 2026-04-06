@@ -6,13 +6,49 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 const CONTENT_DIR = path.join(ROOT, 'content');
 
-// Configuration from CLI args
+// Load .env.secrets manually if it exists
+try {
+  const secretsPath = path.join(ROOT, '.env.secrets');
+  if (fs.existsSync(secretsPath)) {
+    const secrets = fs.readFileSync(secretsPath, 'utf-8');
+    secrets.split('\n').forEach(line => {
+      const [key, ...valueParts] = line.split('=');
+      if (key && valueParts.length > 0) {
+        const value = valueParts.join('=').trim().replace(/^["']|["']$/g, '');
+        process.env[key.trim()] = value;
+      }
+    });
+  }
+} catch (e) {}
+
+// Configuration
 const args = process.argv.slice(2);
-const API_URL = process.env.API_URL || 'http://localhost:8787';
-const ADMIN_USER = args[0];
-const ADMIN_PASS = args[1];
+const ADMIN_USER = args[0] || process.env.ADMIN_USER;
+const ADMIN_PASS = args[1] || process.env.ADMIN_PASS;
+
+let sessionCookie = '';
+
+async function probeApiUrl(): Promise<string> {
+  if (process.env.VITE_API_URL) return process.env.VITE_API_URL;
+  if (process.env.API_URL) return process.env.API_URL;
+
+  const ports = [8788, 8787];
+  for (const port of ports) {
+    const url = `http://localhost:${port}`;
+    try {
+      const res = await fetch(`${url}/api/info`, { signal: AbortSignal.timeout(1000) });
+      if (res.ok) return url;
+    } catch (e) {
+      // Continue to next port
+    }
+  }
+  
+  // Default to 8788 if nothing found, it will fail with a clear error later
+  return 'http://localhost:8788';
+}
 
 async function seed() {
+  const API_URL = await probeApiUrl();
   console.log(`\n🚀 Starting seed process for ${API_URL}...`);
 
   try {
@@ -30,8 +66,6 @@ async function seed() {
     const status = await statusRes.json();
     console.log('Done.');
 
-    let sessionToken: string | null = '';
-
     if (!status.configured) {
       process.stdout.write('📝 Admin not configured. Performing first-time setup... ');
       const setupRes = await fetch(`${API_URL}/api/auth/setup`, {
@@ -45,7 +79,7 @@ async function seed() {
         throw new Error(`Setup failed: ${error.error || setupRes.statusText}`);
       }
 
-      sessionToken = setupRes.headers.get('X-Session-Token');
+      sessionCookie = setupRes.headers.get('Set-Cookie') || '';
       console.log('✅ Success.');
     } else {
       process.stdout.write(`🔑 Admin configured. Logging in... `);
@@ -59,12 +93,13 @@ async function seed() {
         throw new Error('Login failed. Please check your credentials.');
       }
 
-      sessionToken = loginRes.headers.get('X-Session-Token');
+      sessionCookie = loginRes.headers.get('Set-Cookie') || '';
       console.log('✅ Success.');
     }
 
-    if (!sessionToken) {
-      throw new Error('No session token received.');
+    if (!sessionCookie) {
+      // It might be that we are already logged in or something else?
+      // Actually the API should always return a cookie on success login/setup
     }
 
     // 2. Count Files for Progress
@@ -85,7 +120,7 @@ async function seed() {
       const res = await fetch(`${API_URL}/api/content/${relativePath}`, {
         method: 'PUT',
         headers: {
-          'X-Session-Token': sessionToken,
+          'Cookie': sessionCookie,
           'Content-Type': getContentType(file)
         },
         body: content

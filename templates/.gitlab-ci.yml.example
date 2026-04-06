@@ -1,0 +1,45 @@
+stages:
+  - build
+  - test
+  - deploy
+
+build-job:
+  image: node:22
+  stage: build
+  script:
+    - npm install
+    - npm run build
+  artifacts:
+    paths:
+      - dist/
+      - wrangler.toml
+      - package.json
+    expire_in: 1 hour
+
+test-job:
+  image: node:22
+  stage: test
+  dependencies:
+    - build-job
+  script:
+    - # Add your tests here when kit supports them out of box
+    - echo "Running sanity checks..."
+    - npm list @leadertechie/personal-site-kit
+  only:
+    - branches
+
+deploy-job:
+  image: node:22
+  stage: deploy
+  dependencies:
+    - build-job
+  script:
+    - # Replace placeholders in wrangler.toml with CI variables
+    - sed -i "s/your-kv-namespace-id/$KV_ID/" wrangler.toml
+    - sed -i "s/your-bucket-name/$R2_BUCKET/" wrangler.toml
+    - # Deploy
+    - npx wrangler deploy --var API_URL:$PROD_API_URL --var SITE_TITLE:"$PROD_SITE_TITLE"
+  only:
+    - main
+  environment:
+    name: production
