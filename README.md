@@ -23,7 +23,12 @@ npx @leadertechie/create-personal-site
 
 # Specify project name upfront
 npx @leadertechie/create-personal-site my-portfolio
+
+# Use local package sources for debugging or development
+npx @leadertechie/create-personal-site my-portfolio --local
 ```
+
+The `--local` flag tells the generator to reference the local `@leadertechie/personal-site-kit` package instead of using the published `latest` package version.
 
 ## Requirements
 

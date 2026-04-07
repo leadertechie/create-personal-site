@@ -32,7 +32,8 @@ async function fetchGithubProfile(username: string): Promise<GithubProfile | nul
 
 async function init(): Promise<void> {
   const args = process.argv.slice(2);
-  const projectNameArg = args[0];
+  const projectNameArg = args.find(arg => !arg.startsWith('--'));
+  const isLocal = args.includes('--local');
 
   const response = await prompts([
     {
@@ -162,7 +163,7 @@ Welcome to my site!`;
       "seed": "node scripts/seed.js"
     },
     dependencies: {
-      "@leadertechie/personal-site-kit": "latest",
+      "@leadertechie/personal-site-kit": isLocal ? "file:../personal-site-kit" : "latest",
       "lit": "^3.2.1"
     },
     devDependencies: {
