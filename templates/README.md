@@ -41,16 +41,15 @@ id = "PASTE_THE_ID_HERE"
 ### 5. Initial Setup & Seeding
 This step initializes your admin credentials and uploads your initial content to Cloudflare. 
 
-**This step is mandatory and requires a username and password.**
+**This step is mandatory.**
 
+1. Open `.env.secrets` and set your desired `ADMIN_USER` and `ADMIN_PASS`.
+2. Run the seed command:
 ```bash
-npm run seed -- <username> '<password>'
+npm run seed
 ```
-Example (use single quotes for passwords with special characters):
-```bash
-npm run seed -- admin 'my-secure-password!123'
-```
-- **First Run**: This will call the `/auth/setup` endpoint to create your admin account with the provided credentials.
+
+- **First Run**: This will call the `/auth/setup` endpoint to create your admin account with the credentials from `.env.secrets`.
 - **Subsequent Runs**: This will log in using these credentials to sync any local changes in your `content/` folder to R2.
 
 ### 6. Local Development

@@ -34,6 +34,7 @@ async function init(): Promise<void> {
   const args = process.argv.slice(2);
   const projectNameArg = args.find(arg => !arg.startsWith('--'));
   const isLocal = args.includes('--local');
+  const noCI = args.includes('--no-ci');
 
   const response = await prompts([
     {
@@ -154,7 +155,7 @@ Welcome to my site!`;
     type: 'module',
     scripts: {
       "dev": "concurrently \"npm run dev:api\" \"npm run dev:ui\"",
-      "dev:api": "wrangler dev",
+      "dev:api": "wrangler dev --port 8787",
       "dev:ui": "vite",
       "build": "npm run build:ui && npm run build:api",
       "build:ui": "vite build",
@@ -175,9 +176,26 @@ Welcome to my site!`;
   };
   await fs.writeFile(path.join(root, 'package.json'), JSON.stringify(pkg, null, 2));
 
-  // Create .env file for local development
-  const envContent = `# Local Development Configuration\nVITE_API_URL=http://localhost:8788\n`;
+  // Create .env file for local development (UI)
+  const envContent = `# UI Environment Variables\nVITE_API_URL=http://localhost:8787\n`;
   await fs.writeFile(path.join(root, '.env'), envContent);
+
+  // Create .dev.vars for local development (Worker)
+  const devVarsContent = `# Worker Local Variables\nSITE_TITLE="${siteTitle || 'My Personal Website'}"\nAPI_URL="http://localhost:8787"\n`;
+  await fs.writeFile(path.join(root, '.dev.vars'), devVarsContent);
+
+  // Create .env.secrets for local seeding/admin credentials
+  const secretsContent = `# Admin Credentials (Keep this file out of Git!)\nADMIN_USER="admin"\nADMIN_PASS="admin123"\n`;
+  await fs.writeFile(path.join(root, '.env.secrets'), secretsContent);
+
+  // Handle CI files
+  if (!noCI) {
+    const ciExample = path.join(root, '.gitlab-ci.yml.example');
+    if (await fs.pathExists(ciExample)) {
+      await fs.rename(ciExample, path.join(root, '.gitlab-ci.yml'));
+      console.log(blue('Created .gitlab-ci.yml from template.'));
+    }
+  }
 
   console.log("\n" + green('Done!') + " Now run:\n");
   console.log("  cd " + projectName);
@@ -187,7 +205,8 @@ Welcome to my site!`;
   console.log("  npx wrangler kv namespace create KV");
   console.log("  # Update wrangler.toml with the KV ID from the command above");
   console.log("  npm run dev");
-  console.log("  npm run seed -- <username> '<password>'");
+  console.log("  # Admin credentials in .env.secrets used by default");
+  console.log("  npm run seed");
 }
 
 init().catch(e => console.error(red(e)));

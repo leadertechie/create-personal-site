@@ -1,0 +1,7 @@
+deploy-pages:
+  stage: deploy
+  script:
+    - echo "Deploying pages..."
+    - npx wrangler pages deploy ./dist/ui --project-name $PROJECT_NAME
+  only:
+    - main

@@ -6,6 +6,21 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 const CONTENT_DIR = path.join(ROOT, 'content');
 
+// Load .env.secrets manually if it exists
+try {
+  const secretsPath = path.join(ROOT, '.env.secrets');
+  if (fs.existsSync(secretsPath)) {
+    const secrets = fs.readFileSync(secretsPath, 'utf-8');
+    secrets.split('\n').forEach(line => {
+      const [key, ...valueParts] = line.split('=');
+      if (key && valueParts.length > 0) {
+        const value = valueParts.join('=').trim().replace(/^["']|["']$/g, '');
+        process.env[key.trim()] = value;
+      }
+    });
+  }
+} catch (e) {}
+
 // Configuration
 const args = process.argv.slice(2);
 const ADMIN_USER = args[0] || process.env.ADMIN_USER;
