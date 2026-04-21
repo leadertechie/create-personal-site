@@ -119,6 +119,7 @@ Welcome to my site!`;
   await fs.ensureDir(path.join(root, 'ui'));
   await fs.ensureDir(path.join(root, 'prerender'));
   await fs.ensureDir(path.join(root, 'scripts'));
+  await fs.ensureDir(path.join(root, 'dist/ui')); // Ensure assets dir exists for wrangler dev
 
   // Copy seed script from dist to target
   const seedSrc = path.join(__dirname, 'scripts/seed.js');
