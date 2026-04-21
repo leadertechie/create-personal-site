@@ -58,7 +58,7 @@ Test your site locally to see how it looks:
 npm run dev
 ```
 - **UI**: http://localhost:5173
-- **API**: http://localhost:8787
+- **API**: http://localhost:8788 (or 8787)
 
 ### 7. Deploy to Production
 Publish your site to the global Cloudflare edge network:
