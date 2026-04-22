@@ -13,7 +13,11 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8787',
         changeOrigin: true,
-        // Keep /api prefix so Worker can distinguish API calls
+      },
+      '/favicon.ico': {
+        target: 'http://localhost:8787',
+        changeOrigin: true,
+        rewrite: (path) => '/api/logo',
       },
     },
   },

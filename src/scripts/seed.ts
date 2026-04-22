@@ -11,8 +11,11 @@ try {
   const secretsPath = path.join(ROOT, '.env.secrets');
   if (fs.existsSync(secretsPath)) {
     const secrets = fs.readFileSync(secretsPath, 'utf-8');
-    secrets.split('\n').forEach(line => {
-      const [key, ...valueParts] = line.split('=');
+    secrets.split(/\r?\n/).forEach(line => {
+      const trimmedLine = line.trim();
+      if (!trimmedLine || trimmedLine.startsWith('#')) return;
+      
+      const [key, ...valueParts] = trimmedLine.split('=');
       if (key && valueParts.length > 0) {
         const value = valueParts.join('=').trim().replace(/^["']|["']$/g, '');
         process.env[key.trim()] = value;
