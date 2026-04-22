@@ -13,7 +13,7 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8787',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
+        // Keep /api prefix so Worker can distinguish API calls
       },
     },
   },
