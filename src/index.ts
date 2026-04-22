@@ -132,7 +132,7 @@ Welcome to my site!`;
   // UI Entry with Hook pattern - NO local styles.css
   await fs.writeFile(path.join(root, 'ui/index.ts'), "import '@leadertechie/personal-site-kit/styles/theme.css';\nimport { WebsiteUI } from '@leadertechie/personal-site-kit/shared';\nimport '@leadertechie/personal-site-kit/ui';\n\nWebsiteUI.getInstance({\n  // Using hooks for style overriding or custom logic\n  theme: {\n    // primaryColor: '#646cff',\n    // customCss: ':root { --nav-link-color: blue; }'\n  },\n  onBootstrap: (ui) => {\n    console.log('Site is booting up with kit!');\n  }\n}).bootstrap();\n");
   
-  await fs.writeFile(path.join(root, 'prerender/index.ts'), "import { WebsitePrerender } from '@leadertechie/personal-site-kit/prerender';\n\nexport default new WebsitePrerender();\n");
+  await fs.writeFile(path.join(root, 'prerender/index.ts'), "import { WebsitePrerender } from '@leadertechie/personal-site-kit/prerender';\nimport api from '../api';\n\nexport default new WebsitePrerender({ apiHandler: api });\n");
 
   const wranglerToml = await fs.readFile(path.join(root, 'wrangler.toml'), 'utf-8');
   const processedToml = wranglerToml
