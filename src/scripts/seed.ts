@@ -31,20 +31,7 @@ let sessionCookie = '';
 async function probeApiUrl(): Promise<string> {
   if (process.env.VITE_API_URL) return process.env.VITE_API_URL;
   if (process.env.API_URL) return process.env.API_URL;
-
-  const ports = [8788, 8787];
-  for (const port of ports) {
-    const url = `http://localhost:${port}`;
-    try {
-      const res = await fetch(`${url}/api/info`, { signal: AbortSignal.timeout(1000) });
-      if (res.ok) return url;
-    } catch (e) {
-      // Continue to next port
-    }
-  }
-  
-  // Default to 8788 if nothing found, it will fail with a clear error later
-  return 'http://localhost:8788';
+  return 'http://localhost:8787';
 }
 
 async function seed() {
@@ -53,7 +40,7 @@ async function seed() {
 
   try {
     if (!ADMIN_USER || !ADMIN_PASS) {
-        throw new Error('Missing credentials. Usage: npm run seed -- <username> <password>');
+        throw new Error('Missing credentials. Please set ADMIN_USER and ADMIN_PASS in .env.secrets');
     }
 
     console.log(`👤 Using admin user: "${ADMIN_USER}"`);
