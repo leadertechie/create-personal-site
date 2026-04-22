@@ -17,8 +17,9 @@ try {
       
       const [key, ...valueParts] = trimmedLine.split('=');
       if (key && valueParts.length > 0) {
-        const value = valueParts.join('=').trim().replace(/^["']|["']$/g, '');
-        process.env[key.trim()] = value;
+        const k = key.trim();
+        const v = valueParts.join('=').trim().replace(/^["']|["']$/g, '');
+        process.env[k] = v;
       }
     });
   }
